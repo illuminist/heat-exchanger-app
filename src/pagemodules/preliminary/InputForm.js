@@ -8,8 +8,8 @@ import { data as tubeData } from '../../data/tubeSize'
 import fieldDefs, { mechanicalDesignLabel, materialDefs } from '../../fieldDefs'
 
 const fluidTypeItems = [
-  { value: 'water', text: 'Water at atmospheric pressure' },
-  { value: 'saturatedwater', text: 'Saturated Water' },
+  { value: 'water', text: 'Raw Water' },
+  { value: 'saturatedwater', text: 'Condensed Pure Water' },
 ]
 
 const outerDiameterSet = new Set()
@@ -66,7 +66,7 @@ export const InputForm = () => {
 
   return (
     <View>
-      <ExpansionPanel head={<Text>Shell-side</Text>}>
+      <ExpansionPanel head={<Text>Shell-Side</Text>}>
         <Field
           component={TextNumberInput}
           margin="dense"
@@ -99,7 +99,7 @@ export const InputForm = () => {
           {...makeProps('maxPressureDrop')}
         />
       </ExpansionPanel>
-      <ExpansionPanel head={<Text>Tube-side</Text>}>
+      <ExpansionPanel head={<Text>Tube-Side</Text>}>
         <Field
           component={TextNumberInput}
           margin="dense"
@@ -128,7 +128,7 @@ export const InputForm = () => {
           select={tubeMaterialItems}
         />
       </ExpansionPanel>
-      <ExpansionPanel head={<Text>Physical dimension</Text>}>
+      <ExpansionPanel head={<Text>Physical Dimensions</Text>}>
         <Field
           component={TextNumberInput}
           margin="dense"
@@ -193,8 +193,13 @@ export const InputForm = () => {
           margin="dense"
           {...makeProps('baffleCutPercent')}
         />
+        <Field
+          component={TextNumberInput}
+          margin="dense"
+          {...makeProps('shellSideFoulingResistance')}
+        />
       </ExpansionPanel>
-      <ExpansionPanel head={<Text>Flow-induced vibration</Text>}>
+      <ExpansionPanel head={<Text>Flow-Induced Vibration Checks</Text>}>
         <Field
           component={TextNumberInput}
           margin="dense"

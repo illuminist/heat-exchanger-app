@@ -46,38 +46,31 @@ export const mechanicalDesignLabel = {
   bothEndFixed: 'Both end fixed',
 }
 
-export const materialDefs = {
-  carbonSteel: {
-    label: 'Carbon steel',
-    conductivity: 60,
-  },
-}
-
 export const fieldDefs = {
   shellSideFluidType: {
     label: 'Shell side fluid type',
     displayTransform: fluidTypeDisplayTransform,
   },
   shellSideMassFlowRate: {
-    label: 'Shell side mass flow rate',
+    label: 'Shell Side Mass Flow Rate',
     unit: 'Kg/hr',
   },
   shellDiameter: {
     symbol: 'D_s',
-    label: 'Shell inner diameter',
+    label: 'Shell Inner Diameter',
     unit: 'm',
   },
   shellSideInTemp: {
-    label: 'Shell side inlet temperature',
+    label: 'Shell Side Inlet Temperature',
     unit: '°c',
   },
   shellSideOutTemp: {
-    label: 'Shell side outlet temperature',
+    label: 'Shell Side Outlet Temperature',
     unit: '°c',
   },
   shellSideFoulingResistance: {
-    label: 'Shell side fouling resistance',
-    unit: '%',
+    label: 'Fouling Resistance',
+    unit: 'm²K/W',
   },
   tubeSideFluidType: {
     label: 'Tube side fluid type',
@@ -159,7 +152,7 @@ export const fieldDefs = {
     label: 'Tube passes',
   },
   tubeLayout: {
-    label: 'Tube layout',
+    label: 'Tube Layout Angle',
     displayTransform: (v) => v + '°',
   },
   baffleSpacing: {
@@ -182,11 +175,6 @@ export const fieldDefs = {
   tubeMaterialK: {
     label: 'Tube thermal conductivity',
     unit: 'W/m⋅K',
-  },
-  tubeMaterial: {
-    label: 'Tube material',
-    displayTransform: (t) =>
-      `${materialDefs[t].label} K=${materialDefs[t].conductivity}`,
   },
   overallHeatTransferCoeff: {
     symbol: 'U_f',

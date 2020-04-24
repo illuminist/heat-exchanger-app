@@ -5,8 +5,8 @@ export const defaultInput = _.mapValues(
     shellSideFluidType: 'saturatedwater',
     shellSideMassFlowRate: 50000,
     shellSideInTemp: 67,
-    shellSideFoulingResistance: 0.0176,
-    shellSideMassSpecificHeatCapacity: 4184,
+    shellSideFoulingResistance: 0.000176,
+    shellSideMassSpecificHeatCapacity: 4179,
 
     shellSideHeatTransferCoeff: 5000,
 
@@ -25,8 +25,8 @@ export const defaultInput = _.mapValues(
     tubeLayout: 90,
     tubePass: 1,
     tubeMaterialK: 60,
-    tubeInnerDiameter: 0.01905,
-    tubeOuterDiameter: 0.0122428,
+    tubeInnerDiameter: 0.0161,
+    tubeOuterDiameter: 0.01905,
 
     baffleCutPercent: 25,
     baffleSpacing: 0.2,
