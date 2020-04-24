@@ -1,53 +1,41 @@
 import * as React from 'react'
 import _ from 'lodash'
-import { View } from 'react-native'
-import { Button, Content, Text } from 'native-base'
-import TextNumberInput from '../../components/TextNumberInput'
+import { StyleSheet } from 'react-native'
+import { Text, Button, Layout, Icon } from '@ui-kitten/components'
 import SaveButton from '../../components/SaveButton'
 import InputForm from './InputForm'
 import ResultDisplay from './ResultDisplay'
 import { Formik, useFormikContext } from 'formik'
+import { ScrollView } from 'react-native-gesture-handler'
+import AppLayout from '../../components/AppLayout'
+import theme from '../../theme'
+import { useNavigation } from '@react-navigation/native'
+import { defaultInput } from '../../defualtValues'
+import ErrorBoundary from '../../components/ErrorBoundary'
+const NextStepButton = ({ style }) => {
+  const formik = useFormikContext()
+  const navigation = useNavigation()
+  const handleClick = () => {
+    navigation.navigate({
+      name: 'Rating Analysis',
+      params: { values: formik.values, savedName: '', time: Date.now() },
+    })
+  }
 
-const defaultValues = _.mapValues(
-  {
-    shellSideFluidType: 'saturatedwater',
-    shellSideMassFlowRate: 50000,
-    shellSidePressure: 0.2,
-    shellSideInTemp: 67,
-    shellSideFoulingResistance: 0.0176,
-    shellSideMassSpecificHeatCapacity: 4184,
-
-    shellSideHeatTransferCoeff: 5000,
-
-    tubeSideFluidType: 'water',
-    tubeSideMassFlowRate: 30000,
-    tubeSideInTemp: 17,
-    tubeSideOutTemp: 40,
-    tubeSideMassSpecificHeatCapacity: 4179,
-
-    tubeSideHeatTransferCoeff: 4000,
-
-    pitchRatio: 1.25,
-    tubeLength: 3,
-    maxTubeLength: 5,
-    tubeLayout: 90,
-    tubePass: 1,
-    tubeMaterialK: 60,
-    tubeInnerDiameter: 0.016,
-    tubeOuterDiameter: 0.019,
-
-    baffleCutPercent: 25,
-    buffleSpacing: 0.2,
-
-    correctionFactor: 0.9,
-  },
-  String,
-)
+  return (
+    <Button
+      style={style}
+      onPress={handleClick}
+      icon={(s) => <Icon name="arrowhead-right" {...s} />}>
+      To Rating Analysis
+    </Button>
+  )
+}
 
 export const PreliminaryLanding = ({
   savedName = '',
   route,
-  initialValues = defaultValues,
+  initialValues = defaultInput,
 }) => {
   if (route && route.params && route.params.loadedData) {
     initialValues = route.params.loadedData
@@ -55,24 +43,43 @@ export const PreliminaryLanding = ({
   }
 
   const cleanValues = React.useMemo(
-    () => ({ ...defaultValues, ...initialValues }),
+    () => ({ ...defaultInput, ...initialValues }),
     [initialValues],
   )
 
   return (
-    <Formik initialValues={cleanValues}>
-      <Content>
-        <View>
-          <Text>preliminary analysis welcome</Text>
-          <InputForm />
-
-          <Text>Result</Text>
-          <ResultDisplay />
-          <SaveButton step="preliminary" initialName={savedName} />
-        </View>
-      </Content>
-    </Formik>
+    <AppLayout title="Preliminary Analysis">
+      <Formik key={savedName} initialValues={cleanValues}>
+        <ScrollView>
+          <Layout style={theme.container} level="4">
+            <ErrorBoundary>
+              <InputForm />
+            </ErrorBoundary>
+            <Text style={theme.marginVertical} appearance="hint" category="h5">
+              Result
+            </Text>
+            <ErrorBoundary>
+              <ResultDisplay />
+            </ErrorBoundary>
+            <ErrorBoundary>
+              <SaveButton
+                style={theme.marginVertical}
+                step="preliminary"
+                initialName={savedName}
+              />
+            </ErrorBoundary>
+            <NextStepButton style={theme.marginVertical} />
+          </Layout>
+        </ScrollView>
+      </Formik>
+    </AppLayout>
   )
 }
+
+const styles = StyleSheet.create({
+  layout: {
+    // height: 400
+  },
+})
 
 export default PreliminaryLanding

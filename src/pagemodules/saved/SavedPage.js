@@ -1,11 +1,15 @@
 import * as React from 'react'
 import { AppLoading } from 'expo'
-import { Body, ListItem, List, Text, Right, Button, Icon } from 'native-base'
+
+import { Button, Icon, List, ListItem, Text } from '@ui-kitten/components'
+
 import { formatDistanceToNow } from 'date-fns'
 import * as FileSystem from 'expo-file-system'
 import * as configs from '../../configs'
 import DialogPrompt from '../../components/DialogPrompt'
 import { useNavigation } from '@react-navigation/native'
+import AppLayout from '../../components/AppLayout'
+import { StyleSheet } from 'react-native'
 
 const stepMap = {
   preliminary: 'Preliminary Analysis',
@@ -14,6 +18,24 @@ const stepMap = {
 }
 
 const dirPath = FileSystem.documentDirectory + configs.saveDir + '/'
+
+const ThashItem = (style) => <Icon {...style} name="trash" />
+
+const DeleteHandlerContext = React.createContext(null)
+
+const renderItemAccessory = (style) => (
+  <DeleteHandlerContext.Consumer>
+    {(handleDelete) => (
+      <Button
+        style={style}
+        status="danger"
+        onPress={handleDelete}
+        appearance="ghost"
+        icon={ThashItem}
+      />
+    )}
+  </DeleteHandlerContext.Consumer>
+)
 
 export const SavedItem = ({ fileName, onDelete }) => {
   const match = fileName.match('^([^_]+)_(.+).json$')
@@ -59,26 +81,22 @@ export const SavedItem = ({ fileName, onDelete }) => {
   }
 
   return (
-    <ListItem button onPress={handlePress}>
-      <Body>
-        <Text>{name}</Text>
-        <Text note>{stepMap[step] || step}</Text>
-      </Body>
-      <Right>
-        {fileInfo && fileInfo.modificationTime && (
-          <Text note>
-            {formatDistanceToNow(fileInfo.modificationTime * 1000, {
+    <DeleteHandlerContext.Provider value={handleDelete}>
+      <ListItem
+        title={name}
+        description={[
+          stepMap[step] || step,
+          fileInfo &&
+            fileInfo.modificationTime &&
+            formatDistanceToNow(fileInfo.modificationTime * 1000, {
               addSuffix: true,
-            })}
-          </Text>
-        )}
-      </Right>
-      <Right>
-        <Button transparent onPress={handleDelete}>
-          <Icon name="trash" />
-        </Button>
-      </Right>
-    </ListItem>
+            }),
+        ]
+          .filter(Boolean)
+          .join(', ')}
+        accessory={renderItemAccessory}
+        onPress={handlePress}></ListItem>
+    </DeleteHandlerContext.Provider>
   )
 }
 
@@ -97,7 +115,7 @@ const refreshFileList = async () => {
 
 export const SavedPage = () => {
   const [savedList, setSavedList] = React.useState(null)
-  const [r, refresh] = React.useReducer(s => !s)
+  const [r, refresh] = React.useReducer((s) => !s)
 
   React.useEffect(() => {
     let isCurrent = true
@@ -108,23 +126,40 @@ export const SavedPage = () => {
     }
   }, [r])
 
-  return savedList ? (
-    savedList.length > 0 ? (
-      <List
-        dataArray={savedList}
-        keyExtractor={s => s}
-        renderRow={fileName => {
-          return (
-            <SavedItem key={fileName} fileName={fileName} onDelete={refresh} />
-          )
-        }}
-      />
-    ) : (
-      <Text>No saved</Text>
-    )
-  ) : (
-    <AppLoading />
+  const renderItem = React.useCallback(
+    ({ item }) => {
+      const fileName = item
+
+      return <SavedItem key={fileName} fileName={fileName} onDelete={refresh} />
+    },
+    [refresh],
+  )
+
+  return (
+    <AppLayout title="Saved">
+      {savedList ? (
+        savedList.length > 0 ? (
+          <List
+            data={savedList}
+            keyExtractor={(s) => s}
+            renderItem={renderItem}
+            renderRow={renderItem}
+          />
+        ) : (
+          <Text style={styles.noSaved}>No saved</Text>
+        )
+      ) : (
+        <AppLoading />
+      )}
+    </AppLayout>
   )
 }
+
+const styles = StyleSheet.create({
+  noSaved: {
+    textAlign: 'center',
+    margin: 24,
+  },
+})
 
 export default SavedPage

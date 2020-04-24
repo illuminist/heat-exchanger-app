@@ -53,7 +53,6 @@ export const getData = (param) => {
       o
   ])
       .sort((a, b) => a[0] - b[0]);
-  console.log(scored);
   return scored[0][1];
 };
 export default getData;

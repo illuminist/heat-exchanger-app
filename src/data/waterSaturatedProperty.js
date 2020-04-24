@@ -67,10 +67,12 @@ const parsedData = parseData(raw, fieldName).map(row => {
   })
   return newRow
 })
+const nanData = fieldName.reduce((a, v) => ((a[v] = NaN), a), {})
 const getData = temperature => {
   const index = parsedData.findIndex(o => o.temperature >= temperature)
   const r1 = parsedData[index - 1]
   const r2 = parsedData[index]
+  if (!r1) return nanData
   const diff =
     (temperature - r1.temperature) / (r2.temperature - r1.temperature)
   if (diff > 1) return r1

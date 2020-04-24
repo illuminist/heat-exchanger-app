@@ -1,12 +1,12 @@
 import * as React from 'react'
 import _ from 'lodash'
-import { Button, Text } from 'native-base'
+import { Button, Icon } from '@ui-kitten/components'
 import { useFormikContext } from 'formik'
 import * as FileSystem from 'expo-file-system'
 import * as configs from '../configs'
 import DialogPrompt from './DialogPrompt'
 
-export const SaveButton = ({ step, initialName = 'anrm', onSaved }) => {
+export const SaveButton = ({ step, initialName = 'anrm', onSaved, style }) => {
   const { values } = useFormikContext()
 
   const [savedName, setName] = React.useState(initialName)
@@ -55,8 +55,11 @@ export const SaveButton = ({ step, initialName = 'anrm', onSaved }) => {
   }, [step, values, savedName, onSaved])
 
   return (
-    <Button onPress={handleSave}>
-      <Text>Save</Text>
+    <Button
+      style={style}
+      onPress={handleSave}
+      icon={s => <Icon name="save" {...s} />}>
+      Save
     </Button>
   )
 }

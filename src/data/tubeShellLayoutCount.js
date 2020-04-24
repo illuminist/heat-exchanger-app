@@ -155,6 +155,14 @@ const raw = `@0.75/1/3
 35,357,348,335,327,315
 37,407,390,380,374,357
 39,449,436,425,419,407`
+const nanData = {
+  tubeOuterDiameter: NaN,
+  pitchLength: NaN,
+  tubeLayout: NaN,
+  shellDiameter: NaN,
+  tubePass: NaN,
+  numberOfTubes: NaN,
+}
 const tubePassList = [1, 2, 4, 6, 8]
 const parseData = raw
   .split('@')
@@ -178,25 +186,25 @@ const parseData = raw
     return o
   }, [])
   .map(s => s.split('/').map(Number))
-// tubeDiameter // pitchLength // pitchLayout //shellDiameter
+// tubeDiameter // pitchLength // tubeLayout //shellDiameter
 const INCH2M = 0.0254
 const M2INCH = 1 / INCH2M
 const getData = param => {
   const {
     tubeOuterDiameter,
     pitchLength,
-    pitchLayout,
+    tubeLayout,
     shellDiameter,
     tubePass,
     numberOfTubes,
   } = param
   const pitchLayoutNumber =
-    pitchLayout === 45 || pitchLayout === 90
+    tubeLayout === 45 || tubeLayout === 90
       ? 4
-      : pitchLayout === 45 || pitchLayout === 90
+      : tubeLayout === 30 || tubeLayout === 60
       ? 3
-      : new Error('')
-  if (pitchLayoutNumber instanceof Error) throw pitchLayout
+      : new Error('invalid-pitch-layout')
+  if (pitchLayoutNumber instanceof Error) return nanData
   const tubeOuterDiameterInch = tubeOuterDiameter * M2INCH
   const pitchLengthInch = pitchLength * M2INCH
   const shellDiameterInch = shellDiameter * M2INCH
@@ -221,14 +229,15 @@ const getData = param => {
       return [score, a]
     })
     .sort(([a], [b]) => a - b)
+  if (!scoringSort.length) return nanData
   // console.log(scoringSort);
   const [[, top]] = scoringSort
   // console.log(top);
-  if (!top) throw new Error('invalid-tema-setting')
+  if (!top) return nanData
   return {
     tubeOuterDiameter: top[0] * INCH2M,
     pitchLength: top[1] * INCH2M,
-    pitchLayout: top[2],
+    tubeLayout: top[2],
     shellDiameter: top[3] * INCH2M,
     tubePass: top[4],
     numberOfTubes: top[5],

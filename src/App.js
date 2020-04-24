@@ -1,48 +1,39 @@
 import React from 'react'
-import { AppLoading } from 'expo'
-import { Card, CardItem, Container, Content, Body } from 'native-base'
-import { StyleSheet, Text, View } from 'react-native'
+import { Card, Text, Layout } from '@ui-kitten/components'
+import { StyleSheet } from 'react-native'
+import theme from './theme'
+import AppLayout from './components/AppLayout'
 
 export default function App({ navigation }) {
   return (
-    <Container>
-      <Content>
-        <View style={styles.container}>
-          <Text>Open up App.js to start working on your app!</Text>
-          <Card>
-            <CardItem
-              button
-              onPress={() => {
-                navigation.navigate('Preliminary Analysis')
-              }}>
-              <Body>
-                <Text>Preliminary Analysis</Text>
-              </Body>
-            </CardItem>
-          </Card>
-          <Card>
-            <CardItem button
-              onPress={() => {
-                navigation.navigate('Rating Analysis')
-              }}>
-              <Body>
-                <Text>Rating Analysis</Text>
-              </Body>
-            </CardItem>
-          </Card>
-          <Card>
-            <CardItem button
-              onPress={() => {
-                navigation.navigate('Saved')
-              }}>
-              <Body>
-                <Text>Saved document</Text>
-              </Body>
-            </CardItem>
-          </Card>
-        </View>
-      </Content>
-    </Container>
+    <AppLayout title="Home">
+      <Layout level="4"style={theme.container}>
+        <Card
+          style={styles.card}
+          onPress={() => {
+            navigation.navigate('Preliminary Analysis')
+          }}>
+          <Text category="h6">Preliminary Analysis</Text>
+        </Card>
+        <Card style={[styles.card, styles.disabledCard]} disabled>
+          <Text appearance="hint" category="h6">
+            Rating Analysis
+          </Text>
+        </Card>
+        <Card style={[styles.card, styles.disabledCard]} disabled>
+          <Text appearance="hint" category="h6">
+            Sizing Analysis
+          </Text>
+        </Card>
+        <Card
+          style={styles.card}
+          onPress={() => {
+            navigation.navigate('Saved')
+          }}>
+          <Text category="h6">Saved document</Text>
+        </Card>
+      </Layout>
+    </AppLayout>
   )
 }
 
@@ -52,5 +43,14 @@ const styles = StyleSheet.create({
     // backgroundColor: '#fff',
     // alignItems: 'center',
     // justifyContent: 'center',
+  },
+  card: {
+    marginTop: 16,
+    marginBottom: 8,
+    elevation: 8,
+  },
+  disabledCard: {
+    backgroundColor: '#f7f7f7',
+    shadowOpacity: 0.3,
   },
 })

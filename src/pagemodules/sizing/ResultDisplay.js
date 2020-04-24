@@ -8,6 +8,7 @@ import meq from '../../memoeq'
 import fieldDefs, { materialDefs } from '../../fieldDefs'
 import makePDF from '../../makePDF'
 import makeHTMLReport from '../../makeHTMLReport'
+import tubeSize from '../../data/tubeSize'
 import { formatNumber, flow, prepareInput, outputTransform } from '../../utils'
 import theme from '../../theme'
 import { StyleSheet, View } from 'react-native'
@@ -73,23 +74,42 @@ const flowForResult = flow(
   ['pitchLength', (p) => p.pitchRatio * p.tubeOuterDiameter],
   ['shellSideOutTemp', meq.shellSideOutTemp],
   ['shellDiameter', meq.shellDiameter],
+)
+
+const flowForFinalResult = flow(
+  ['pressureDropForIdealTubeBank', meq.pressureDropForIdealTubeBank],
   [
-    ['pressureDropForIdealTubeBank', meq.pressureDropForIdealTubeBank],
+    'pressureDropInInteriorCrossflowSection',
+    meq.pressureDropInInteriorCrossflowSection,
+  ],
+  ['bypassChannelDiametralGap', meq.bypassChannelDiametralGap],
+  ['numberOfTubeRowCrossingBaffleTip', meq.numberOfTubeRowCrossingBaffleTip],
+  ['numberOfTubeRowCrossingWindowArea', meq.numberOfTubeRowCrossingWindowArea],
+  ['grossWindowFlowArea', meq.grossWindowFlowArea],
+  ['areaOccupiedByNtwTubes', meq.areaOccupiedByNtwTubes],
+  ['pressureDropInWindow', meq.pressureDropInWindow],
+  ['pressureDropInEntranceAndExit', meq.pressureDropInEntranceAndExit],
+  ['shellSidePressureDropTotal', meq.shellSidePressureDropTotal],
+  ['tubeUnsupportedLength', meq.tubeUnsupportedLength],
+  ['axialTubeStressMultiplier', meq.axialTubeStressMultiplier],
+  ['metalMassPerUnitLength', (param) => tubeSize(param).massPerLengthSteel],
+  [
+    ['longitudinalStress', meq.longitudinalStress],
+    ['momentOfInertia', meq.momentOfInertia],
+    ['clipplingLoad', meq.clipplingLoad],
+    ['tubeMetalCrossSectionalArea', meq.tubeMetalCrossSectionalArea],
+    ['tubeFluidMassPerUnitLength', meq.tubeFluidMassPerUnitLength],
     [
-      'pressureDropInInteriorCrossflowSection',
-      meq.pressureDropInInteriorCrossflowSection,
+      'tubeFluidMassDisplacedPerUnitLength',
+      meq.tubeFluidMassDisplacedPerUnitLength,
     ],
-    ['bypassChannelDiametralGap', meq.bypassChannelDiametralGap],
-    ['numberOfTubeRowCrossingBaffleTip', meq.numberOfTubeRowCrossingBaffleTip],
-    [
-      'numberOfTubeRowCrossingWindowArea',
-      meq.numberOfTubeRowCrossingWindowArea,
-    ],
-    ['grossWindowFlowArea', meq.grossWindowFlowArea],
-    ['areaOccupiedByNtwTubes', meq.areaOccupiedByNtwTubes],
-    ['pressureDropInWindow', meq.pressureDropInWindow],
-    ['pressureDropInEntranceAndExit', meq.pressureDropInEntranceAndExit],
-    ['shellSidePressureDropTotal', meq.shellSidePressureDropTotal],
+    ['hydroDynamicMassPerUnitLength', meq.hydroDynamicMassPerUnitLength],
+    ['effectiveTubeMass', meq.effectiveTubeMass],
+    ['naturalFrequency', meq.naturalFrequency],
+    ['dampingConstant', meq.dampingConstant],
+    ['fluidElasticParameter', meq.fluidElasticParameter],
+    ['criticalFlowVelocityFactor', meq.criticalFlowVelocityFactor],
+    ['criticalFlowVelocity', meq.criticalFlowVelocity],
   ],
 )
 
@@ -100,18 +120,51 @@ export const ResultDisplay = () => {
     const input = { ...prepareInput(formik.values), recalculation: 0 }
 
     let result = flowForSurfaceOverDesign(input)
-    // if (result.surfaceOverDesign > 1.3) {
-    //   result = {
-    //     ...result,
-    //     ...meq.surfaceOverDesignRecalculate(result),
-    //     recalculation: result.recalculation + 1,
-    //   }
-    // }
 
-    return outputTransform(flowForResult(result))
+    if (result.surfaceOverDesign > 1.3) {
+      result = {
+        ...result,
+        ...meq.surfaceOverDesignRecalculate({
+          surfaceOverDesign: 1.2,
+          ...result,
+          recalculation: result.recalculation + 1,
+        }),
+      }
+    }
+    result = flowForResult(result)
+
+    if (
+      !Number.isNaN(input.maxPressureDrop) &&
+      meq.shellSidePressureDropTotal(result) > input.maxPressureDrop
+    ) {
+      let lo = 0.1
+      let hi = result.surfaceOverDesign
+      let step = 10
+      let pressureDrop = meq.shellSidePressureDropTotal(result)
+      while (step > 0) {
+        const newOd = (hi + lo) / 2
+        result = {
+          ...result,
+          ...meq.surfaceOverDesignRecalculate({
+            ...result,
+            surfaceOverDesign: newOd,
+          }),
+        }
+
+        result = flowForResult({ surfaceOverDesign: newOd, ...result })
+        pressureDrop = meq.shellSidePressureDropTotal(result)
+
+        if (pressureDrop < input.maxPressureDrop) {
+          lo = newOd
+        } else {
+          hi = newOd
+        }
+        step--
+      }
+    }
+
+    return outputTransform(flowForFinalResult(result))
   }, [formik.values])
-
-  console.log(parsedData)
 
   const makeProps = (name) => {
     const data = parsedData[name]
@@ -131,12 +184,12 @@ export const ResultDisplay = () => {
   }
 
   const handlePrintPDF = async () => {
-    const html = makeHTMLReport('test', 'rating', parsedData)
+    const html = makeHTMLReport('test', 'sizing', parsedData)
     await printPDF(html)
   }
 
   const handleSharePDF = async () => {
-    const html = makeHTMLReport('test', 'rating', parsedData)
+    const html = makeHTMLReport('test', 'sizing', parsedData)
     await sharePDF(html)
   }
 
@@ -178,6 +231,23 @@ export const ResultDisplay = () => {
       <LabeledText {...makeProps('pressureDropInWindow')} />
       <LabeledText {...makeProps('pressureDropInEntranceAndExit')} />
       <LabeledText {...makeProps('shellSidePressureDropTotal')} />
+
+      <LabeledText {...makeProps('tubeUnsupportedLength')} />
+      <LabeledText {...makeProps('metalMassPerUnitLength')} />
+      <LabeledText {...makeProps('longitudinalStress')} />
+      <LabeledText {...makeProps('momentOfInertia')} />
+      <LabeledText {...makeProps('clipplingLoad')} />
+      <LabeledText {...makeProps('tubeMetalCrossSectionalArea')} />
+      <LabeledText {...makeProps('axialTubeStressMultiplier')} />
+      <LabeledText {...makeProps('tubeFluidMassPerUnitLength')} />
+      <LabeledText {...makeProps('tubeFluidMassDisplacedPerUnitLength')} />
+      <LabeledText {...makeProps('hydroDynamicMassPerUnitLength')} />
+      <LabeledText {...makeProps('effectiveTubeMass')} />
+      <LabeledText {...makeProps('naturalFrequency')} />
+      <LabeledText {...makeProps('dampingConstant')} />
+      <LabeledText {...makeProps('fluidElasticParameter')} />
+      <LabeledText {...makeProps('criticalFlowVelocityFactor')} />
+      <LabeledText {...makeProps('criticalFlowVelocity')} />
     </Card>
   )
 }

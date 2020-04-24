@@ -14,51 +14,65 @@ const raw = `
 103–102 0.408 –0.460 6.0900 –0.602
 102–10 0.900 –0.631 32.1000 –0.963
 <10 0.970 –0.667 35.0000 –1.000
-`;
+`
+const nanData = {
+  a1: NaN,
+  a2: NaN,
+  a3: NaN,
+  a4: NaN,
+  b1: NaN,
+  b2: NaN,
+  b3: NaN,
+  b4: NaN,
+}
 const parsedData = raw
-    .replace(/–/g, "-")
-    .split(/\s?(?=\d\d°)/g)
-    .filter(Boolean)
-    .map(subt => {
+  .replace(/–/g, '-')
+  .split(/\s?(?=\d\d°)/g)
+  .filter(Boolean)
+  .map(subt => {
     const rows = subt
-        .split("\n")
-        .filter(Boolean)
-        .map(r => r
-        .split(" ")
-        .filter(Boolean)
-        .map(w => w.endsWith("°")
-        ? Number(w.match(/(\d+)/)[1])
-        : w.match(/\d+-\d+/)
-            ? Number(w.match(/(\d)-/)[1])
-            : w.match(/<10/)
-                ? 1
-                : Number(w)));
-    return rows;
-});
+      .split('\n')
+      .filter(Boolean)
+      .map(r =>
+        r
+          .split(' ')
+          .filter(Boolean)
+          .map(w =>
+            w.endsWith('°')
+              ? Number(w.match(/(\d+)/)[1])
+              : w.match(/\d+-\d+/)
+              ? Number(w.match(/(\d)-/)[1])
+              : w.match(/<10/)
+              ? 1
+              : Number(w),
+          ),
+      )
+    return rows
+  })
 export const getRow = (angle, reynold) => {
-    const aTable = parsedData.find(t => t[0][0] === angle);
-    if (!aTable)
-        throw new Error("unsupported-tubelayout");
-    const bRow = aTable.find((row, i) => {
-        const pow = i === 0 ? row[1] : row[0];
-        return reynold > Math.pow(10, pow - 1);
-    });
-    if (!bRow)
-        throw new Error("unsupported-number");
-    const firstRow = aTable[0];
-    return Object.assign({ a3: firstRow[4], a4: firstRow[5], b3: firstRow[8], b4: firstRow[9] }, (firstRow === bRow
-        ? {
-            a1: firstRow[2],
-            a2: firstRow[3],
-            b1: firstRow[6],
-            b2: firstRow[7]
+  const aTable = parsedData.find(t => t[0][0] === angle)
+  if (!aTable) return nanData
+  const bRow = aTable.find((row, i) => {
+    const pow = i === 0 ? row[1] : row[0]
+    return reynold > Math.pow(10, pow - 1)
+  })
+  if (!bRow) return nanData
+  const firstRow = aTable[0]
+  return Object.assign(
+    { a3: firstRow[4], a4: firstRow[5], b3: firstRow[8], b4: firstRow[9] },
+    firstRow === bRow
+      ? {
+          a1: firstRow[2],
+          a2: firstRow[3],
+          b1: firstRow[6],
+          b2: firstRow[7],
         }
-        : {
-            a1: bRow[1],
-            a2: bRow[2],
-            b1: bRow[3],
-            b2: bRow[4]
-        }));
-};
-export default getRow;
- 
+      : {
+          a1: bRow[1],
+          a2: bRow[2],
+          b1: bRow[3],
+          b2: bRow[4],
+        },
+  )
+}
+export default getRow

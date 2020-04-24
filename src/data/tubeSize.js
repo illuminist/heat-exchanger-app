@@ -5,10 +5,11 @@ const fieldName = [
   'internalFlowArea',
   'externalSurfaceAreaPerFt',
   'internalSurfaceAreaPerFt',
-  'weightPerFtSteel',
+  'massPerLengthSteel',
   'innerDiameter',
   'diameterRatio',
 ]
+const inchToMeterField = ['outerDiameter', 'innerDiameter']
 const raw = `
 1/4 22 0.028 0.0295 0.0655 0.0508 0.066 0.194 1.289
 1/4 24 0.022 0.0333 0.0655 0.0539 0.054 0.206 1.214
@@ -76,16 +77,14 @@ const raw = `
 2 13 0.095 2.573 0.5236 0.4739 1.934 1.810 1.105
 2-1/2 9 0.148 3.815 0.6540 0.5770 3.719 2.204 1.134
 `
-
 const availableOuterDiameter = new Set([0.75, 1])
-
 export const data = raw
   .replace(/-?(\d)\/(\d)/g, (m, p1, p2) =>
     ('' + Number(p1) / Number(p2)).substring(1),
   )
   .split('\n')
   .filter(Boolean)
-  .map(rawrow =>
+  .map((rawrow) =>
     rawrow
       .split(' ')
       .map(Number)
@@ -94,4 +93,36 @@ export const data = raw
         return acc
       }, {}),
   )
-  .filter(o => availableOuterDiameter.has(o.outerDiameter))
+  .filter((o) => availableOuterDiameter.has(o.outerDiameter))
+  .map((o) => {
+    let p = Object.assign({}, o)
+    inchToMeterField.forEach((f) => {
+      p[f + 'Inch'] = p[f]
+      p[f] = p[f] * 0.0254
+    })
+    p.massPerLengthSteel = p.massPerLengthSteel * 1.48816
+    return p
+  })
+const nanData = fieldName.reduce((acc, n) => {
+  acc[n] = NaN
+  return acc
+}, {})
+export const getData = (param) => {
+  const selection = data
+    // .filter(
+    //   t =>
+    //     t.outerDiameter >= param.tubeOuterDiameter &&
+    //     t.innerDiameter >= param.tubeInnerDiameter
+    // )
+    .map((t) => [
+      Math.abs(t.outerDiameter - param.tubeOuterDiameter) +
+        Math.abs(t.innerDiameter - param.tubeInnerDiameter),
+      t,
+    ])
+    .sort(([s], [s1]) => s - s1)
+  // .map(c => (console.log(c), c));
+  const tube = (selection && selection[0] && selection[0][1]) || nanData
+  // console.log(tube, param.tubeInnerDiameter, param.tubeOuterDiameter);
+  return tube
+}
+export default getData

@@ -1,45 +1,23 @@
 import * as React from 'react'
 import _ from 'lodash'
 import { StyleSheet } from 'react-native'
-import { Button, Text, Layout } from '@ui-kitten/components'
+import { Text, Layout } from '@ui-kitten/components'
 import SaveButton from '../../components/SaveButton'
 import ResultDisplay from './ResultDisplay'
-import { Formik, useFormikContext } from 'formik'
+import { Formik } from 'formik'
 import { ScrollView } from 'react-native-gesture-handler'
 import AppLayout from '../../components/AppLayout'
 import theme from '../../theme'
-import { useNavigation } from '@react-navigation/native'
 import { defaultInput } from '../../defualtValues'
-import renderIcon from '../../components/renderIcon'
 import ErrorBoundary from '../../components/ErrorBoundary'
 
-const NextStepButton = ({ style }) => {
-  const formik = useFormikContext()
-  const navigation = useNavigation()
-  const handleClick = () => {
-    navigation.navigate({
-      name: 'Sizing Analysis',
-      params: { values: formik.values, savedName: '', time: Date.now() },
-    })
-  }
-
-  return (
-    <Button
-      style={style}
-      onPress={handleClick}
-      icon={renderIcon('arrowhead-right')}>
-      To Sizing Analysis
-    </Button>
-  )
-}
-
-export const RatingLanding = ({
+export const SizingLanding = ({
   savedName = '',
   route,
   initialValues = defaultInput,
 }) => {
   let time = 0
-  console.log(route)
+
   if (
     route &&
     route.params &&
@@ -56,7 +34,7 @@ export const RatingLanding = ({
   )
 
   return (
-    <AppLayout title="Rating Analysis">
+    <AppLayout title="Sizing Analysis">
       <Formik key={savedName + time} initialValues={cleanValues}>
         <ScrollView>
           <Layout style={theme.container} level="2">
@@ -69,11 +47,10 @@ export const RatingLanding = ({
             <ErrorBoundary>
               <SaveButton
                 style={theme.marginVertical}
-                step="rating"
+                step="sizing"
                 initialName={savedName}
               />
             </ErrorBoundary>
-            <NextStepButton style={theme.marginVertical} />
           </Layout>
         </ScrollView>
       </Formik>
@@ -87,4 +64,4 @@ const styles = StyleSheet.create({
   },
 })
 
-export default RatingLanding
+export default SizingLanding

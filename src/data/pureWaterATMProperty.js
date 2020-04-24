@@ -33,10 +33,12 @@ const raw = `
 100,0.5896,0.00001227,2042,0.02506,0.9996,0.002881,472.8,0.05891
 `
 const parsedData = parseData(raw, fieldName)
+const nanData = fieldName.reduce((a, v) => ((a[v] = NaN), a), {})
 const getData = temperature => {
   const index = parsedData.findIndex(o => o.temperature >= temperature)
   const r1 = parsedData[index - 1]
   const r2 = parsedData[index]
+  if (!r1) return nanData
   const diff =
     (temperature - r1.temperature) / (r2.temperature - r1.temperature)
   if (diff > 1) return r1

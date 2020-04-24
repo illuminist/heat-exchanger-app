@@ -10,104 +10,247 @@ const headRow = () => {
 </tr>`
 }
 
-const row = (label, value, unit) => {
+const tranformSymbol = (symbol) =>
+  symbol.replace(/_(.+)$/, (m, p1) => `<sub>${p1}</sub>`)
+
+const row = (name, value) => {
+  const fieldDef = fieldDefs[name]
+  const { unit, label = name, symbol, displayTransform } = fieldDef || {}
+
   return `<tr class="row">
-    <td>${label}</td>
-    <td class="numberCell">${
-      typeof value === 'number'
+    <td class="parameterNameColumn">${
+      label +
+      (symbol ? ` <span class="symbol">(${tranformSymbol(symbol)})</span>` : '')
+    }</td>
+    <td class="numberCell parameterValueColumn">${
+      displayTransform
+        ? displayTransform(value)
+        : typeof value === 'number'
         ? formatNumber(unit === '&' ? value * 100 : value)
         : value
     }</td>
-    <td>${typeof unit === 'undefined' ? '' : unit}</td>
+    <td class="parameterUnitColumn">${unit || ''}</td>
   </tr>`
 }
 
-const preliminaryInputFieldList = [
-  'shellSideFluidType',
-  'shellSideMassFlowRate',
-  'shellSidePressure',
-  'shellSideInTemp',
-  'shellSideFoulingResistance',
-  'shellSideMassSpecificHeatCapacity',
-
-  'shellSideHeatTransferCoeff',
-
-  'tubeSideFluidType',
-  'tubeSideMassFlowRate',
-  'tubeSideInTemp',
-  'tubeSideOutTemp',
-  'tubeSideMassSpecificHeatCapacity',
-
-  'tubeSideHeatTransferCoeff',
-
-  'pitchRatio',
-  'tubeLength',
-  'maxTubeLength',
-  'tubeLayout',
-  'tubePass',
-  'tubeMaterialK',
-  'tubeInnerDiameter',
-  'tubeOuterDiameter',
-]
-const preliminaryResultFieldList = [
-  'shellSideOutTemp',
-  'overallHeatTransferCoeff',
-  'tubeLength',
-  'shellDiameter',
-  'numberOfTubes',
-]
-
-const preliminaryTable = param => {
-  return `<table cellpadding="10">
-    ${headRow()}
-    ${preliminaryInputFieldList
-      .map(name => {
-        const fieldDef = fieldDefs[name]
-
-        return row(
-          (fieldDef && fieldDef.label) || name,
-          param[name],
-          fieldDef && fieldDef.unit,
-        )
-      })
-      .join('')}
-  </table>
-  <h2>Analysis result</h2>
-  <table cellpadding="10">
-    ${headRow()}
-    ${preliminaryResultFieldList
-      .map(name => {
-        const fieldDef = fieldDefs[name]
-
-        return row(
-          (fieldDef && fieldDef.label) || name,
-          param[name],
-          fieldDef && fieldDef.unit,
-        )
-      })
-      .join('')}
+const table = (title, fields, param) => {
+  return `
+  <h2 class="tableTitle">${title}</h2>
+  <table class="table" cellpadding="10">
+  ${headRow()}
+  ${fields.map((name) => row(name, param[name])).join('')}
   </table>`
 }
 
-const ratingInputFieldList = ['']
-const ratingTable = param => {
-  return `<table cellpadding="10">
-  </table>`
+const displayFields = {
+  preliminary: [
+    {
+      title: 'Shell side',
+      fields: [
+        'shellSideFluidType',
+        'shellSideMassFlowRate',
+        'shellSideInTemp',
+        'shellSideFoulingResistance',
+        'shellSideMassSpecificHeatCapacity',
+      ],
+    },
+    {
+      title: 'Tube side',
+      fields: [
+        'tubeSideFluidType',
+        'tubeSideMassFlowRate',
+        'tubeSideInTemp',
+        'tubeSideOutTemp',
+        'tubeSideMassSpecificHeatCapacity',
+        'tubeSideHeatTransferCoeff',
+      ],
+    },
+    {
+      title: 'Physical dimension',
+      fields: [
+        'pitchRatio',
+        'tubeLength',
+        'maxTubeLength',
+        'tubeLayout',
+        'tubePass',
+        'tubeMaterialK',
+        'tubeInnerDiameter',
+        'tubeOuterDiameter',
+      ],
+    },
+    {
+      title: 'Preliminary analysis result',
+      fields: [
+        'shellSideOutTemp',
+        'overallHeatTransferCoeff',
+        'tubeLength',
+        'shellDiameter',
+        'numberOfTubes',
+      ],
+    },
+  ],
+  rating: [
+    {
+      title: 'Shell side',
+      fields: [
+        'shellSideFluidType',
+        'shellSideMassFlowRate',
+        'shellSideInTemp',
+        'shellSideFoulingResistance',
+        'shellSideMassSpecificHeatCapacity',
+      ],
+    },
+    {
+      title: 'Tube side',
+      fields: [
+        'tubeSideFluidType',
+        'tubeSideMassFlowRate',
+        'tubeSideInTemp',
+        'tubeSideOutTemp',
+        'tubeSideMassSpecificHeatCapacity',
+        'tubeSideHeatTransferCoeff',
+      ],
+    },
+    {
+      title: 'Physical dimension',
+      fields: [
+        'pitchRatio',
+        'tubeLength',
+        'maxTubeLength',
+        'tubeLayout',
+        'tubePass',
+        'tubeMaterialK',
+        'tubeInnerDiameter',
+        'tubeOuterDiameter',
+      ],
+    },
+    {
+      title: 'Rating analysis result',
+      fields: [
+        'recalculation',
+        'surfaceOverDesign',
+        'overallHeatTransferCoeff',
+        'shellSideHeatTransferArea',
+        'tubeLength',
+        'shellDiameter',
+        'numberOfTubeRowCrossingBaffleTip',
+        'pressureDropForIdealTubeBank',
+        'pressureDropInInteriorCrossflowSection',
+        'bypassChannelDiametralGap',
+        'numberOfTubeRowCrossingWindowArea',
+        'grossWindowFlowArea',
+        'areaOccupiedByNtwTubes',
+        'pressureDropInWindow',
+        'pressureDropInEntranceAndExit',
+        'shellSidePressureDropTotal',
+      ],
+    },
+  ],
+  sizing: [
+    {
+      title: 'Shell side',
+      fields: [
+        'shellSideFluidType',
+        'shellSideMassFlowRate',
+        'shellSideInTemp',
+        'shellSideFoulingResistance',
+        'shellSideMassSpecificHeatCapacity',
+      ],
+    },
+    {
+      title: 'Tube side',
+      fields: [
+        'tubeSideFluidType',
+        'tubeSideMassFlowRate',
+        'tubeSideInTemp',
+        'tubeSideOutTemp',
+        'tubeSideMassSpecificHeatCapacity',
+        'tubeSideHeatTransferCoeff',
+      ],
+    },
+    {
+      title: 'Physical dimension',
+      fields: [
+        'pitchRatio',
+        'tubeLength',
+        'maxTubeLength',
+        'tubeLayout',
+        'tubePass',
+        'tubeMaterialK',
+        'tubeInnerDiameter',
+        'tubeOuterDiameter',
+      ],
+    },
+    {
+      title: 'Flow-induced vibration',
+      fields: [
+        'mechanicalDesign',
+        'tubeUnsupportedLength',
+        'tubeYoungModulus',
+        'longitudinalStress',
+        'addedMassCoefficient',
+        'tubeMassPerLength',
+      ],
+    },
+    {
+      title: 'Sizing analysis result',
+      fields: [
+        'shellSidePressureDropTotal',
+        'tubeUnsupportedLength',
+        'tubeMassPerLength',
+        'longitudinalStress',
+        'momentOfInertia',
+        'clipplingLoad',
+        'tubeMetalCrossSectionalArea',
+        'axialTubeStressMultiplier',
+        'tubeFluidMassPerUnitLength',
+        'tubeFluidMassDisplacedPerUnitLength',
+        'hydroDynamicMassPerUnitLength',
+        'effectiveTubeMass',
+        'naturalFrequency',
+        'dampingConstant',
+        'fluidElasticParameter',
+        'criticalFlowVelocityFactor',
+        'criticalFlowVelocity',
+      ],
+    },
+  ],
 }
 
 const styles = `<style>
+.table {
+  width: 100%;
+}
+.tableTitle: {
+  color: red;
+  margin-top: 100px;
+}
 .numberCell {
   text-align: right;
 }
-.row:nth-of-type(odd) {
+.symbol {
+  color: #555;
+  font-size: 0.9em;
+}
+.row:nth-of-type(even) {
   background-color: #eee;
+}
+.parameterNameColumn {
+  width: 60%;
+}
+.parameterValueColumn {
+  width: 20%;
+}
+.parameterUnitColumn {
+  width: 20%;
 }
 </style>`
 
 export const generateHTML = (name, step, param, results) => {
-  const html = `<div>${styles}<h1>Report ${step}</h1>${
-    step === 'preliminary' ? preliminaryTable(param) : 'rating'
-  }</div>`
+  const tableDef = displayFields[step]
+  const html = `<div>${styles}<h1>Report ${step}</h1>${tableDef
+    .map(({ title, fields }) => table(title, fields, param))
+    .join('\n')}</div>`
   return html
 }
 
