@@ -1,15 +1,25 @@
 import React from 'react'
 import { View } from 'react-native'
-import { Text } from '@ui-kitten/components'
+import { Text, Button } from '@ui-kitten/components'
 import { Field, useFormikContext } from 'formik'
 import TextNumberInput from '../../components/TextNumberInput'
 import ExpansionPanel from '../../components/ExpansionPanel'
 import { data as tubeData } from '../../data/tubeSize'
-import fieldDefs, { mechanicalDesignLabel, materialDefs } from '../../fieldDefs'
+import addedmasscoeff from '../../../assets/addedmasscoeff.jpg'
+import fieldDefs, {
+  fluidTypeDisplayTransform,
+  mechanicalDesignLabel,
+  materialDefs,
+} from '../../fieldDefs'
+import { formatNumber } from '../../utils'
+import { useNavigation } from '@react-navigation/native'
 
 const fluidTypeItems = [
-  { value: 'water', text: 'Raw Water' },
-  { value: 'saturatedwater', text: 'Condensed Pure Water' },
+  { value: 'water', text: fluidTypeDisplayTransform('water') },
+  {
+    value: 'saturatedwater',
+    text: fluidTypeDisplayTransform('saturatedwater'),
+  },
 ]
 
 const outerDiameterSet = new Set()
@@ -26,11 +36,12 @@ const outerTubeDiameterItems = tubeData
     }
   })
   .map((o) => ({
-    text: String(o.outerDiameterInch).replace(
-      /(\.(25|5|75))$/,
-      (m, p) => fractionReplaceMap[p],
-    ),
-    value: String(o.outerDiameter),
+    text:
+      String(o.outerDiameterInch).replace(
+        /(\.(25|5|75))$/,
+        (m, p) => fractionReplaceMap[p],
+      ) + ` (${formatNumber(o.outerDiameterInch * 0.254)}m)`,
+    value: String(o.outerDiameterInch),
   }))
 
 const tubeMaterialItems = Object.keys(materialDefs).map((t) => ({
@@ -41,17 +52,22 @@ const tubeMaterialItems = Object.keys(materialDefs).map((t) => ({
 export const InputForm = () => {
   const formik = useFormikContext()
 
+  const navigation = useNavigation()
+
   const innerTubeDiameterItems = React.useMemo(() => {
     return tubeData
-      .filter((o) => '' + o.outerDiameter === formik.values.tubeOuterDiameter)
+      .filter(
+        (o) => '' + o.outerDiameterInch === formik.values.tubeOuterDiameterInch,
+      )
       .map((o) => ({
-        text: String(o.innerDiameterInch).replace(
-          /(\.(25|5|75))$/,
-          (m, p) => fractionReplaceMap[p],
-        ),
-        value: String(o.innerDiameter),
+        text:
+          String(o.innerDiameterInch).replace(
+            /(\.(25|5|75))$/,
+            (m, p) => fractionReplaceMap[p],
+          ) + ` (${formatNumber(o.innerDiameterInch * 0.254)}m)`,
+        value: String(o.innerDiameterInch),
       }))
-  }, [formik.values.tubeOuterDiameter])
+  }, [formik.values.tubeOuterDiameterInch])
 
   const makeProps = (name) => {
     const fieldDef = fieldDefs[name]
@@ -91,11 +107,7 @@ export const InputForm = () => {
         <Field
           component={TextNumberInput}
           margin="dense"
-          {...makeProps('shellSideFluidPressure')}
-        />
-        <Field
-          component={TextNumberInput}
-          margin="dense"
+          optional
           {...makeProps('maxPressureDrop')}
         />
       </ExpansionPanel>
@@ -120,6 +132,11 @@ export const InputForm = () => {
           component={TextNumberInput}
           margin="dense"
           {...makeProps('tubeSideOutTemp')}
+        />
+        <Field
+          component={TextNumberInput}
+          margin="dense"
+          {...makeProps('tubeSideFluidMaxVelocity')}
         />
         <Field
           component={TextNumberInput}
@@ -149,12 +166,6 @@ export const InputForm = () => {
           margin="dense"
           {...makeProps('maxTubeLength')}
         />
-        <Field
-          component={TextNumberInput}
-          margin="dense"
-          optional
-          {...makeProps('maxPressureDrop')}
-        />
 
         <Field
           component={TextNumberInput}
@@ -172,21 +183,16 @@ export const InputForm = () => {
         <Field
           component={TextNumberInput}
           margin="dense"
-          {...makeProps('tubeOuterDiameter')}
+          {...makeProps('tubeOuterDiameterInch')}
           label={makeProps('tubeOuterDiameterInch').label}
           select={outerTubeDiameterItems}
         />
         <Field
           component={TextNumberInput}
           margin="dense"
-          {...makeProps('tubeInnerDiameter')}
+          {...makeProps('tubeInnerDiameterInch')}
           label={makeProps('tubeInnerDiameterInch').label}
           select={innerTubeDiameterItems}
-        />
-        <Field
-          component={TextNumberInput}
-          margin="dense"
-          {...makeProps('baffleSpacing')}
         />
         <Field
           component={TextNumberInput}
@@ -197,6 +203,11 @@ export const InputForm = () => {
           component={TextNumberInput}
           margin="dense"
           {...makeProps('shellSideFoulingResistance')}
+        />
+        <Field
+          component={TextNumberInput}
+          margin="dense"
+          {...makeProps('maxSurfaceOverDesign')}
         />
       </ExpansionPanel>
       <ExpansionPanel head={<Text>Flow-Induced Vibration Checks</Text>}>
@@ -230,6 +241,23 @@ export const InputForm = () => {
           margin="dense"
           {...makeProps('addedMassCoefficient')}
         />
+        <Button
+          onPress={() =>
+            navigation.navigate('ImageView', {
+              images: [
+                {
+                  url: '',
+                  props: {
+                    // Or you can set source directory.
+                    source: addedmasscoeff,
+                  },
+                },
+              ],
+            })
+          }
+          appearance="outline">
+          View Graph Reference
+        </Button>
       </ExpansionPanel>
     </View>
   )

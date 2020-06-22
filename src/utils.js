@@ -1,25 +1,31 @@
 import _ from 'lodash'
+import fieldDefs from './fieldDefs'
+
+const INCH2METER = 0.0254
+const METER2INCH = 1 / 0.0254
 
 export const formatNumber = (x) => {
   const exp = Math.floor(Math.log10(Math.abs(x)))
 
   const round = Math.round(x * Math.pow(10, -exp + 5)) * Math.pow(10, exp - 5)
-  if (exp >= 6 || exp <= -4)
-    return (round * Math.pow(10, -exp)).toFixed(4) + 'e' + exp
+  const prec = x.toPrecision(6)
+  if (prec.length > 9) return round.toExponential(5)
 
-  const [integer, decimal] = ('' + round).split('.')
-  const avialableFloat = 6 - integer.length
+  // const [integer, decimal] = ('' + round).split('.')
+  // const avialableFloat = 6 - integer.length
 
-  return (
-    integer +
-    (decimal
-      ? '.' +
-        decimal
-          .substring(0, 10)
-          .substring(0, avialableFloat)
-          .replace(/0+$/, '0')
-      : '')
-  )
+  return prec
+
+  // return (
+  //   integer +
+  //   (decimal
+  //     ? '.' +
+  //       decimal
+  //         .substring(0, 10)
+  //         .substring(0, avialableFloat)
+  //         .replace(/0+$/, '0')
+  //     : '')
+  // )
 }
 
 const stringFields = new Set([
@@ -28,26 +34,48 @@ const stringFields = new Set([
   'mechanicalDesign',
   'tubeMaterial',
 ])
-const inchToMeterFields = new Set([])
-const percentFields = new Set([
-  'baffleCutPercent',
-  'shellSideFoulingResistance',
-  'tubeSideFoulingResistance',
-  'foulingResistance',
-  'surfaceOverDesign',
-])
+const inchToMeterFields = {
+  tubeOuterDiameterInch: 'tubeOuterDiameter',
+  tubeInnerDiameterInch: 'tubeInnerDiameter',
+}
+const percentFields = new Set(['baffleCutPercent', 'surfaceOverDesign', 'maxSurfaceOverDesign'])
 
 export const prepareInput = (keyvalues) =>
-  _.mapValues(keyvalues, (v, k) => {
-    if (stringFields.has(k)) return v
-    const num = Number(v)
-    if (inchToMeterFields.has(k)) return num * 0.0254
-    if (percentFields.has(k)) return num / 100
-    return num
-  })
+  _.transform(
+    keyvalues,
+    (acc, v, k) => {
+      if (stringFields.has(k)) {
+        return
+      }
+
+      const num = Number(v)
+      if (k in inchToMeterFields) {
+        acc[k] = num
+        const t = inchToMeterFields[k]
+        // console.log(t, num * INCH2METER)
+
+        acc[t] = num * INCH2METER
+        // console.log(acc)
+        return
+      }
+      if (percentFields.has(k)) {
+        acc[k] = num / 100
+        return
+      }
+      acc[k] = num
+    },
+    { ...keyvalues },
+  )
 
 export const outputTransform = (keyvalues) =>
   _.mapValues(keyvalues, (v, k) => {
+    const def = fieldDefs[k]
+    if (!def) return v
+    if (def) {
+      if (def.displayTransform) {
+        return def.displayTransform(v)
+      }
+    }
     if (percentFields.has(k)) return v * 100
     return v
   })

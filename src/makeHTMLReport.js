@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import fieldDefs from './fieldDefs'
 import numeral from 'numeral'
 import { formatNumber } from './utils'
@@ -13,20 +14,27 @@ const headRow = () => {
 const tranformSymbol = (symbol) =>
   symbol.replace(/_(.+)$/, (m, p1) => `<sub>${p1}</sub>`)
 
-const row = (name, value) => {
+const makeLabel = (name) => {
   const fieldDef = fieldDefs[name]
-  const { unit, label = name, symbol, displayTransform } = fieldDef || {}
+  const { label = name, symbol } = fieldDef || {}
+  return (
+    label +
+    (symbol ? ` <span class="symbol">(${tranformSymbol(symbol)})</span>` : '')
+  )
+}
+
+const row = (name, value, inUnit) => {
+  const fieldDef = fieldDefs[name]
+  const { unit = inUnit, label = name, symbol, displayTransform } =
+    fieldDef || {}
 
   return `<tr class="row">
-    <td class="parameterNameColumn">${
-      label +
-      (symbol ? ` <span class="symbol">(${tranformSymbol(symbol)})</span>` : '')
-    }</td>
+    <td class="parameterNameColumn">${makeLabel(name)}</td>
     <td class="numberCell parameterValueColumn">${
       displayTransform
         ? displayTransform(value)
         : typeof value === 'number'
-        ? formatNumber(unit === '&' ? value * 100 : value)
+        ? formatNumber(unit === '%' ? value * 100 : value)
         : value
     }</td>
     <td class="parameterUnitColumn">${unit || ''}</td>
@@ -38,7 +46,16 @@ const table = (title, fields, param) => {
   <h2 class="tableTitle">${title}</h2>
   <table class="table" cellpadding="10">
   ${headRow()}
-  ${fields.map((name) => row(name, param[name])).join('')}
+  ${fields
+    .map((name) => {
+      if (typeof name === 'string') return row(name, param[name])
+      return row(
+        name.label,
+        typeof name.value === 'function' ? name.value(param) : name.value,
+        name.title,
+      )
+    })
+    .join('')}
   </table>`
 }
 
@@ -81,34 +98,90 @@ const displayFields = {
     {
       title: 'Preliminary analysis result',
       fields: [
+        'heatDuty',
         'shellSideOutTemp',
         'overallHeatTransferCoeff',
+        'overallHeatTransferCoeffClean',
+        'logMeanTempDiff',
+        'shellSideHeatTransferArea',
+        'shellSideHeatTransferAreaClean',
+        'pitchLength',
         'tubeLength',
-        'shellDiameter',
         'numberOfTubes',
+        'shellDiameter',
+        'baffleSpacing',
       ],
     },
   ],
+
   rating: [
     {
       title: 'Shell side',
       fields: [
-        'shellSideFluidType',
-        'shellSideMassFlowRate',
-        'shellSideInTemp',
-        'shellSideFoulingResistance',
-        'shellSideMassSpecificHeatCapacity',
+        {
+          label: makeLabel('dynamicViscosity'),
+          value: (p) => _.get(p, 'shellSideFluidProperty.dynamicViscosity'),
+          unit: fieldDefs['dynamicViscosity'].unit,
+        },
+        {
+          label: makeLabel('density'),
+          value: (p) => _.get(p, 'shellSideFluidProperty.density'),
+          unit: fieldDefs['density'].unit,
+        },
+        {
+          label: makeLabel('specificHeatCapacity'),
+          value: (p) => _.get(p, 'shellSideFluidProperty.specificHeat'),
+          unit: fieldDefs['specificHeatCapacity'].unit,
+        },
+        {
+          label: makeLabel('thermalConductivity'),
+          value: (p) => _.get(p, 'shellSideFluidProperty.thermalConductivity'),
+          unit: fieldDefs['thermalConductivity'].unit,
+        },
+        {
+          label: makeLabel('prandtlNumber'),
+          value: (p) => _.get(p, 'shellSideFluidProperty.prandltNumber'),
+          unit: fieldDefs['prandtlNumber'].unit,
+        },
+        {
+          label: makeLabel('massVelocity'),
+          value: (p) => _.get(p, 'shellMassVelocity'),
+          unit: fieldDefs['massVelocity'].unit,
+        },
+        'shellReynold',
       ],
     },
     {
       title: 'Tube side',
       fields: [
-        'tubeSideFluidType',
-        'tubeSideMassFlowRate',
-        'tubeSideInTemp',
-        'tubeSideOutTemp',
-        'tubeSideMassSpecificHeatCapacity',
-        'tubeSideHeatTransferCoeff',
+        {
+          label: makeLabel('dynamicViscosity'),
+          value: (p) => _.get(p, 'tubeSideFluidProperty.dynamicViscosity'),
+          unit: fieldDefs['dynamicViscosity'].unit,
+        },
+        {
+          label: makeLabel('density'),
+          value: (p) => _.get(p, 'tubeSideFluidProperty.density'),
+          unit: fieldDefs['density'].unit,
+        },
+        {
+          label: makeLabel('specificHeatCapacity'),
+          value: (p) => _.get(p, 'tubeSideFluidProperty.specificHeat'),
+          unit: fieldDefs['specificHeatCapacity'].unit,
+        },
+        {
+          label: makeLabel('thermalConductivity'),
+          value: (p) => _.get(p, 'tubeSideFluidProperty.thermalConductivity'),
+          unit: fieldDefs['thermalConductivity'].unit,
+        },
+        {
+          label: makeLabel('prandtlNumber'),
+          value: (p) => _.get(p, 'tubeSideFluidProperty.prandltNumber'),
+          unit: fieldDefs['prandtlNumber'].unit,
+        },
+        'fluidVelocity',
+        'tubeReynold',
+        'nusseltNumber',
       ],
     },
     {
@@ -125,79 +198,67 @@ const displayFields = {
       ],
     },
     {
-      title: 'Rating analysis result',
+      title: 'Overall Heat Transfer Coefficient',
       fields: [
-        'recalculation',
+        'overallHeatTransferCoeffKern',
+        'overallHeatTransferCoeffKernClean',
+        'overallHeatTransferCoeffBD',
+        'overallHeatTransferCoeffBDClean',
+      ],
+    },
+    {
+      title: 'Surface Overdesign',
+      fields: [
+        'shellSideHeatTransferArea',
+        'shellSideHeatTransferAreaClean',
+        'surfaceOverDesign',
+      ],
+    },
+  ],
+
+  sizing: [
+    {
+      title: 'Sizing Analysis Calculation',
+      fields: [
         'surfaceOverDesign',
         'overallHeatTransferCoeff',
         'shellSideHeatTransferArea',
         'tubeLength',
         'shellDiameter',
+      ],
+    },
+    {
+      title: 'Crossflow Pressure Drop',
+      fields: [
         'numberOfTubeRowCrossingBaffleTip',
         'pressureDropForIdealTubeBank',
         'pressureDropInInteriorCrossflowSection',
+      ],
+    },
+    {
+      title: 'Window Pressure Drop',
+      fields: [
         'bypassChannelDiametralGap',
         'numberOfTubeRowCrossingWindowArea',
         'grossWindowFlowArea',
         'areaOccupiedByNtwTubes',
+        'netFlowAreaInWindow',
         'pressureDropInWindow',
-        'pressureDropInEntranceAndExit',
-        'shellSidePressureDropTotal',
-      ],
-    },
-  ],
-  sizing: [
-    {
-      title: 'Shell side',
-      fields: [
-        'shellSideFluidType',
-        'shellSideMassFlowRate',
-        'shellSideInTemp',
-        'shellSideFoulingResistance',
-        'shellSideMassSpecificHeatCapacity',
       ],
     },
     {
-      title: 'Tube side',
-      fields: [
-        'tubeSideFluidType',
-        'tubeSideMassFlowRate',
-        'tubeSideInTemp',
-        'tubeSideOutTemp',
-        'tubeSideMassSpecificHeatCapacity',
-        'tubeSideHeatTransferCoeff',
-      ],
+      title: 'First & Last Baffle Compartment Pressure Drop',
+      fields: ['pressureDropInEntranceAndExit'],
     },
     {
-      title: 'Physical dimension',
-      fields: [
-        'pitchRatio',
-        'tubeLength',
-        'maxTubeLength',
-        'tubeLayout',
-        'tubePass',
-        'tubeMaterialK',
-        'tubeInnerDiameter',
-        'tubeOuterDiameter',
-      ],
+      title: 'Total Shell-Side Pressure Drop',
+      fields: ['shellSidePressureDropTotal'],
     },
     {
-      title: 'Flow-induced vibration',
+      title: 'Flow-Induced Vibration Check',
       fields: [
-        'mechanicalDesign',
         'tubeUnsupportedLength',
-        'tubeYoungModulus',
-        'longitudinalStress',
-        'addedMassCoefficient',
-        'tubeMassPerLength',
-      ],
-    },
-    {
-      title: 'Sizing analysis result',
-      fields: [
-        'shellSidePressureDropTotal',
-        'tubeUnsupportedLength',
-        'tubeMassPerLength',
+        'metalMassPerUnitLength',
         'longitudinalStress',
         'momentOfInertia',
         'clipplingLoad',

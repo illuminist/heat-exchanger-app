@@ -20,6 +20,7 @@ import SavedPage from './pagemodules/saved/SavedPage'
 import DialogPrompt from './components/DialogPrompt'
 import { ApplicationProvider, IconRegistry } from '@ui-kitten/components'
 import * as eva from '@eva-design/eva'
+import ImageView from './components/ImageView'
 
 const Drawer = createDrawerNavigator()
 const Stack = createStackNavigator()
@@ -40,9 +41,7 @@ function CustomDrawerContent(props) {
 
   const stackState = state.routes[0].state
 
-  console.log(state)
-
-  const onSelect = index => {
+  const onSelect = (index) => {
     navigation.closeDrawer()
     if (stackState && stackState.index !== index) {
       stackState.index > 0 && navigation.dispatch(StackActions.popToTop())
@@ -90,6 +89,7 @@ export default function AppEntry() {
                   <Stack.Screen name="Rating Analysis" component={Rating} />
                   <Stack.Screen name="Sizing Analysis" component={Sizing} />
                   <Stack.Screen name="Saved" component={SavedPage} />
+                  <Stack.Screen name="ImageView" component={ImageView} />
                 </Stack.Navigator>
               )}
             </Drawer.Screen>

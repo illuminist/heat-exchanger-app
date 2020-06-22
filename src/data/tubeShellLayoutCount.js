@@ -213,7 +213,7 @@ const getData = param => {
       t > tubeOuterDiameterInch - 0.25 &&
       l === pitchLayoutNumber &&
       tubePass === pass &&
-      tubes >= numberOfTubes - 10,
+      tubes >= numberOfTubes,
   )
   // console.log(layoutFilter);
   // console.log(shellDiameter, shellDiameterInch);

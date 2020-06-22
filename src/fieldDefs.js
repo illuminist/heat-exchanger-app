@@ -32,9 +32,9 @@ export const fieldNames = [
 export const fluidTypeDisplayTransform = (type) => {
   switch (type) {
     case 'water':
-      return 'Water'
+      return 'Raw Water'
     case 'saturatedwater':
-      return 'Saturated Water'
+      return 'Condensed Pure Water'
     default:
       return type
   }
@@ -44,6 +44,13 @@ export const mechanicalDesignLabel = {
   bothEndSupported: 'Both end supported',
   oneFixedOneSupported: 'One end fixed and one end supported',
   bothEndFixed: 'Both end fixed',
+}
+
+export const materialDefs = {
+  carbonSteel: {
+    label: 'Carbon Steel',
+    thermalConductivity: 60,
+  },
 }
 
 export const fieldDefs = {
@@ -92,6 +99,11 @@ export const fieldDefs = {
     label: 'Tube side fouling resistance',
     unit: '%',
   },
+  tubeSideFluidMaxVelocity: {
+    label: 'Maximum Allowable TS Fluid Velocity',
+    unit: 'm/s',
+    symbol: 'V_max',
+  },
   numberOfTubes: {
     symbol: 'N_t',
     label: 'Number of tubes',
@@ -113,6 +125,7 @@ export const fieldDefs = {
     symbol: 'OD',
     label: 'Surface over design',
     unit: '%',
+    displayTransform: (v) => (v - 1) * 100,
   },
   maxTubeLength: {
     symbol: 'L_m',
@@ -123,6 +136,7 @@ export const fieldDefs = {
     symbol: 'd_o',
     label: 'Tube outer diameter',
     unit: 'inches',
+    displayTransform: (v) => `${v} (${(v * 0.0254).toPrecision(3)}m)`,
   },
   tubeOuterDiameter: {
     symbol: 'd_o',
@@ -133,6 +147,7 @@ export const fieldDefs = {
     symbol: 'd_i',
     label: 'Tube inner diameter',
     unit: 'inches',
+    displayTransform: (v) => `${v} (${(v * 0.0254).toPrecision(3)}m)`,
   },
   tubeInnerDiameter: {
     symbol: 'd_i',
@@ -141,12 +156,12 @@ export const fieldDefs = {
   },
   pitchLength: {
     symbol: 'P_t',
-    label: 'Pitch length',
+    label: 'Tube Pitch',
     unit: 'm',
   },
   pitchRatio: {
     symbol: 'P_R',
-    label: 'Pitch ratio',
+    label: 'Pitch Ratio',
   },
   tubePass: {
     label: 'Tube passes',
@@ -178,8 +193,38 @@ export const fieldDefs = {
   },
   overallHeatTransferCoeff: {
     symbol: 'U_f',
-    label: 'Overall heat transfer coefficient',
+    label: 'Overall Heat Transfer Coefficient(Fouled)',
     unit: 'W/m²⋅K',
+  },
+  overallHeatTransferCoeffClean: {
+    symbol: 'U_c',
+    label: 'Overall heat transfer coefficient(Clean)',
+    unit: 'W/m²⋅K',
+  },
+  overallHeatTransferCoeffKern: {
+    symbol: 'U_f',
+    label: 'Overall Heat Transfer Coefficient(Fouled)(Kern Method)',
+    unit: 'W/m²⋅K',
+  },
+  overallHeatTransferCoeffKernClean: {
+    symbol: 'U_c',
+    label: 'Overall heat transfer coefficient(Clean)(Kern Method)',
+    unit: 'W/m²⋅K',
+  },
+  overallHeatTransferCoeffBD: {
+    symbol: 'U_f',
+    label: 'Overall Heat Transfer Coefficient(Fouled)(Bell-Delaware Method)',
+    unit: 'W/m²⋅K',
+  },
+  overallHeatTransferCoeffBDClean: {
+    symbol: 'U_c',
+    label: 'Overall heat transfer coefficient(Clean)(Bell-Delaware Method)',
+    unit: 'W/m²⋅K',
+  },
+  logMeanTempDiff: {
+    label: 'LMTD',
+    symbol: '∆T_m',
+    unit: '°c',
   },
   shellSidePressureDrop: {
     symbol: 'P_s',
@@ -193,7 +238,12 @@ export const fieldDefs = {
   },
   shellSideHeatTransferArea: {
     symbol: 'A_f',
-    label: 'Heat transfer area',
+    label: 'Fouled Area of Heat Transfer',
+    unit: units.squereMeter,
+  },
+  shellSideHeatTransferAreaClean: {
+    symbol: 'A_c',
+    label: 'Clean Area of Heat Transfer',
     unit: units.squereMeter,
   },
   tubeSidePressureDrop: {
@@ -220,6 +270,11 @@ export const fieldDefs = {
     symbol: '∆P_e',
     label: 'Pressure drop in the entrance and exit section',
     unit: 'Pa',
+  },
+  netFlowAreaInWindow: {
+    symbol: 'A_w',
+    label: 'Net flow area in the window',
+    unit: units.squereMeter,
   },
   pressureDropInWindow: {
     symbol: '∆P_w',
@@ -319,6 +374,70 @@ export const fieldDefs = {
   mechanicalDesign: {
     label: 'Mechanical Design',
     displayTransform: (type) => mechanicalDesignLabel[type],
+  },
+  tubeMaterial: {
+    label: 'Tube Material',
+    displayTransform: (type) =>
+      `${materialDefs[type].label} K=${materialDefs[type].thermalConductivity}`,
+  },
+  heatDuty: {
+    label: 'Heat Duty',
+    unit: 'W',
+  },
+  dynamicViscosity: {
+    label: 'Dynamic Viscosity',
+    unit: 'Pa·s',
+    symbol: 'μ',
+  },
+  density: {
+    label: 'Density',
+    unit: 'kg/m³',
+    symbol: 'ρ',
+  },
+  specificHeatCapacity: {
+    label: 'Specific Heat Capacity',
+    unit: 'J/kg·K',
+    symbol: 'C_p',
+  },
+  thermalConductivity: {
+    label: 'Thermal Conduc',
+    unit: 'W/m·K',
+    symbol: 'k',
+  },
+  prandtlNumber: {
+    label: 'Prandtl Number',
+    symbol: 'Pr',
+  },
+  massVelocity: {
+    label: 'Mass Velocity',
+    unit: 'kg/s·m²',
+    symbol: 'G',
+  },
+  shellMassVelocity: {
+    label: 'Mass Velocity',
+    unit: 'kg/s·m²',
+    symbol: 'G_s',
+  },
+  reynoldNumber: {
+    label: 'Reynold Number',
+    symbol: 'Re',
+  },
+  tubeReynold: {
+    label: 'Reynold Number',
+    symbol: 'Re_t',
+  },
+  shellReynold: {
+    label: 'Reynold Number',
+    symbol: 'Re_s',
+  },
+  fluidVelocity: {
+    label: 'Fluid Velocity',
+    symbol: 'V_t',
+    unit: 'm/s',
+  },
+  nusseltNumber: {
+    label: 'Nusselt Number',
+    unit: 'Nu',
   },
 }
 

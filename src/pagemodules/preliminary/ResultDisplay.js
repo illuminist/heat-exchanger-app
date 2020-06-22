@@ -10,38 +10,14 @@ import makeHTMLReport from '../../makeHTMLReport'
 import { formatNumber, flow, prepareInput } from '../../utils'
 import theme from '../../theme'
 import { printPDF, sharePDF } from '../../makePDF'
-
-
-const flowResult = flow(
-  ['tubeMaterialK', (p) => materialDefs[p.tubeMaterial].conductivity],
-  ['tubeLength', (p) => Math.ceil(p.maxTubeLength / 2)],
-  ['pitchLength', (p) => p.pitchRatio * p.tubeOuterDiameter],
-  ['shellSideOutTemp', eq.shellSideOutTemp],
-  ['shellDiameter', eq.shellDiameter],
-  ['shellDiameter', (p) => Math.ceil(p.shellDiameter * 10) / 10],
-  ['numberOfTubes', (p) => Math.ceil(eq.numberOfTubes(p))],
-  (p) => (
-    console.log(eq.tubeShellLayoutCount(p)),
-    {
-      ...p,
-      ..._.pick(
-        eq.tubeShellLayoutCount(p),
-        'shellDiameter',
-        'numberOfTubes',
-        'pitchLength',
-      ),
-    }
-  ),
-  ['overallHeatTransferCoeff', eq.overallHeatTransferCoeff],
-)
+import { prelimFlow } from '../../resultFlow'
 
 export const ResultDisplay = () => {
   const formik = useFormikContext()
 
   const parsedData = React.useMemo(() => {
     const input = prepareInput(formik.values)
-
-    return flowResult(input)
+    return prelimFlow(input)
   }, [formik.values])
 
   const makeProps = (name) => {
@@ -88,17 +64,23 @@ export const ResultDisplay = () => {
           </Button>
         </View>
       )}>
+      <LabeledText {...makeProps('heatDuty')} />
       <LabeledText {...makeProps('shellSideOutTemp')} />
 
       <LabeledText {...makeProps('overallHeatTransferCoeff')} />
-
-      <LabeledText {...makeProps('tubeLength')} />
+      <LabeledText {...makeProps('overallHeatTransferCoeffClean')} />
+      <LabeledText {...makeProps('logMeanTempDiff')} />
+      <LabeledText {...makeProps('shellSideHeatTransferArea')} />
+      <LabeledText {...makeProps('shellSideHeatTransferAreaClean')} />
 
       <LabeledText {...makeProps('pitchLength')} />
+      <LabeledText {...makeProps('tubeLength')} />
+
+      <LabeledText {...makeProps('numberOfTubes')} />
 
       <LabeledText {...makeProps('shellDiameter')} />
 
-      <LabeledText {...makeProps('numberOfTubes')} />
+      <LabeledText {...makeProps('baffleSpacing')} />
     </Card>
   )
 }

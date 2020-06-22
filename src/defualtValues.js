@@ -17,19 +17,22 @@ export const defaultInput = _.mapValues(
     tubeSideMassSpecificHeatCapacity: 4179,
     tubeMaterial: 'carbonSteel',
     tubeSideHeatTransferCoeff: 4000,
+    tubeSideFluidMaxVelocity: 1.5,
 
     pitchRatio: 1.25,
     tubeLength: 3,
     maxPressureDrop: 15000,
     maxTubeLength: 5,
     tubeLayout: 90,
-    tubePass: 1,
+    tubePass: 2,
     tubeMaterialK: 60,
-    tubeInnerDiameter: 0.0161,
-    tubeOuterDiameter: 0.01905,
+
+    tubeOuterDiameterInch: 0.75,
+    tubeInnerDiameterInch: 0.634,
+
+    maxSurfaceOverDesign: 30,
 
     baffleCutPercent: 25,
-    baffleSpacing: 0.2,
 
     lmtdCorrectionFactor: 0.9,
 

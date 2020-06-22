@@ -1,117 +1,23 @@
 import _ from 'lodash'
 import React from 'react'
-import { Button, Card, Icon } from '@ui-kitten/components'
+import { Button, Card, Icon, Text } from '@ui-kitten/components'
 import { useFormikContext } from 'formik'
 import LabeledText from '../../components/LabeledText'
 import * as eq from '../../equations'
 import meq from '../../memoeq'
-import fieldDefs, { materialDefs } from '../../fieldDefs'
-import makePDF from '../../makePDF'
+import fieldDefs from '../../fieldDefs'
 import makeHTMLReport from '../../makeHTMLReport'
-import tubeSize from '../../data/tubeSize'
-import { formatNumber, flow, prepareInput, outputTransform } from '../../utils'
+import { formatNumber, prepareInput, outputTransform } from '../../utils'
 import theme from '../../theme'
 import { StyleSheet, View } from 'react-native'
 import { printPDF, sharePDF } from '../../makePDF'
-
-const flowForSurfaceOverDesign = flow(
-  ['tubeMaterialK', (p) => materialDefs[p.tubeMaterial].conductivity],
-  ['tubeLength', (p) => Math.ceil(p.maxTubeLength / 2)],
-  ['pitchLength', (p) => p.pitchRatio * p.tubeOuterDiameter],
-  ['shellSideOutTemp', eq.shellSideOutTemp],
-  ['shellDiameter', eq.shellDiameter],
-  ['numberOfTubes', (p) => Math.ceil(eq.numberOfTubes(p))],
-  (p) => ({
-    ...p,
-    ..._.pick(
-      eq.tubeShellLayoutCount(p),
-      'shellDiameter',
-      'numberOfTubes',
-      'pitchLength',
-    ),
-  }),
-  ['overallHeatTransferCoeff', eq.overallHeatTransferCoeff],
-  (p) => ({
-    ...p,
-    ..._.pick(
-      eq.tubeShellLayoutCount(p),
-      'shellDiameter',
-      'numberOfTubes',
-      'pitchLength',
-    ),
-  }),
-  [
-    'shellSideFluidProperty',
-    (p) =>
-      eq.fluidProperty(
-        p.shellSideFluidType,
-        p.shellSideInTemp,
-        p.shellSideOutTemp,
-      ),
-  ],
-  [
-    'tubeSideFluidProperty',
-    (p) =>
-      eq.fluidProperty(
-        p.tubeSideFluidType,
-        p.tubeSideInTemp,
-        p.tubeSideOutTemp,
-      ),
-  ],
-  ['tubeShellLayoutCount', eq.tubeShellLayoutCount],
-  ['surfaceOverDesign', meq.surfaceOverDesign],
-)
-
-const flowForResult = flow(
-  [
-    'overallHeatTransferCoeff',
-    (p) => p.overallHeatTransferCoeff || meq.overallHeatTransferCoeff(p),
-  ],
-  [
-    'shellSideHeatTransferArea',
-    (p) => p.shellSideHeatTransferArea || meq.shellSideHeatTransferAreaFoul(p),
-  ],
-  ['pitchLength', (p) => p.pitchRatio * p.tubeOuterDiameter],
-  ['shellSideOutTemp', meq.shellSideOutTemp],
-  ['shellDiameter', meq.shellDiameter],
-)
-
-const flowForFinalResult = flow(
-  ['pressureDropForIdealTubeBank', meq.pressureDropForIdealTubeBank],
-  [
-    'pressureDropInInteriorCrossflowSection',
-    meq.pressureDropInInteriorCrossflowSection,
-  ],
-  ['bypassChannelDiametralGap', meq.bypassChannelDiametralGap],
-  ['numberOfTubeRowCrossingBaffleTip', meq.numberOfTubeRowCrossingBaffleTip],
-  ['numberOfTubeRowCrossingWindowArea', meq.numberOfTubeRowCrossingWindowArea],
-  ['grossWindowFlowArea', meq.grossWindowFlowArea],
-  ['areaOccupiedByNtwTubes', meq.areaOccupiedByNtwTubes],
-  ['pressureDropInWindow', meq.pressureDropInWindow],
-  ['pressureDropInEntranceAndExit', meq.pressureDropInEntranceAndExit],
-  ['shellSidePressureDropTotal', meq.shellSidePressureDropTotal],
-  ['tubeUnsupportedLength', meq.tubeUnsupportedLength],
-  ['axialTubeStressMultiplier', meq.axialTubeStressMultiplier],
-  ['metalMassPerUnitLength', (param) => tubeSize(param).massPerLengthSteel],
-  [
-    ['longitudinalStress', meq.longitudinalStress],
-    ['momentOfInertia', meq.momentOfInertia],
-    ['clipplingLoad', meq.clipplingLoad],
-    ['tubeMetalCrossSectionalArea', meq.tubeMetalCrossSectionalArea],
-    ['tubeFluidMassPerUnitLength', meq.tubeFluidMassPerUnitLength],
-    [
-      'tubeFluidMassDisplacedPerUnitLength',
-      meq.tubeFluidMassDisplacedPerUnitLength,
-    ],
-    ['hydroDynamicMassPerUnitLength', meq.hydroDynamicMassPerUnitLength],
-    ['effectiveTubeMass', meq.effectiveTubeMass],
-    ['naturalFrequency', meq.naturalFrequency],
-    ['dampingConstant', meq.dampingConstant],
-    ['fluidElasticParameter', meq.fluidElasticParameter],
-    ['criticalFlowVelocityFactor', meq.criticalFlowVelocityFactor],
-    ['criticalFlowVelocity', meq.criticalFlowVelocity],
-  ],
-)
+import {
+  prelimFlow,
+  ratingFlow,
+  sizingFlow,
+  odReflow,
+  pressureDropReflow,
+} from '../../resultFlow'
 
 export const ResultDisplay = () => {
   const formik = useFormikContext()
@@ -119,51 +25,21 @@ export const ResultDisplay = () => {
   const parsedData = React.useMemo(() => {
     const input = { ...prepareInput(formik.values), recalculation: 0 }
 
-    let result = flowForSurfaceOverDesign(input)
-
-    if (result.surfaceOverDesign > 1.3) {
-      result = {
-        ...result,
-        ...meq.surfaceOverDesignRecalculate({
-          surfaceOverDesign: 1.2,
-          ...result,
-          recalculation: result.recalculation + 1,
-        }),
-      }
+    let result = prelimFlow(input)
+    result = ratingFlow(result)
+    if (result.surfaceOverDesign > 1 + input.maxSurfaceOverDesign) {
+      result = odReflow(result)
     }
-    result = flowForResult(result)
+    result = sizingFlow(result)
 
     if (
       !Number.isNaN(input.maxPressureDrop) &&
       meq.shellSidePressureDropTotal(result) > input.maxPressureDrop
     ) {
-      let lo = 0.1
-      let hi = result.surfaceOverDesign
-      let step = 10
-      let pressureDrop = meq.shellSidePressureDropTotal(result)
-      while (step > 0) {
-        const newOd = (hi + lo) / 2
-        result = {
-          ...result,
-          ...meq.surfaceOverDesignRecalculate({
-            ...result,
-            surfaceOverDesign: newOd,
-          }),
-        }
-
-        result = flowForResult({ surfaceOverDesign: newOd, ...result })
-        pressureDrop = meq.shellSidePressureDropTotal(result)
-
-        if (pressureDrop < input.maxPressureDrop) {
-          lo = newOd
-        } else {
-          hi = newOd
-        }
-        step--
-      }
+      result = pressureDropReflow(result)
     }
 
-    return outputTransform(flowForFinalResult(result))
+    return outputTransform(result)
   }, [formik.values])
 
   const makeProps = (name) => {
@@ -211,27 +87,35 @@ export const ResultDisplay = () => {
         </View>
       )}>
       <LabeledText {...makeProps('surfaceOverDesign')} />
-
       <LabeledText {...makeProps('overallHeatTransferCoeff')} />
-
       <LabeledText {...makeProps('shellSideHeatTransferArea')} />
-
       <LabeledText {...makeProps('tubeLength')} />
-
       <LabeledText {...makeProps('shellDiameter')} />
+      <LabeledText {...makeProps('shellMassVelocity')} />
+      <LabeledText {...makeProps('shellReynold')} />
 
+      <Text category="h5">Shell-Side Pressure Drop</Text>
+
+      <Text category="h6">Crossflow Pressure Drop</Text>
       <LabeledText {...makeProps('numberOfTubeRowCrossingBaffleTip')} />
-
       <LabeledText {...makeProps('pressureDropForIdealTubeBank')} />
       <LabeledText {...makeProps('pressureDropInInteriorCrossflowSection')} />
+
+      <Text category="h6">Window Pressure Drop</Text>
       <LabeledText {...makeProps('bypassChannelDiametralGap')} />
       <LabeledText {...makeProps('numberOfTubeRowCrossingWindowArea')} />
       <LabeledText {...makeProps('grossWindowFlowArea')} />
       <LabeledText {...makeProps('areaOccupiedByNtwTubes')} />
+      <LabeledText {...makeProps('netFlowAreaInWindow')} />
       <LabeledText {...makeProps('pressureDropInWindow')} />
+
+      <Text category="h6">First & Last Baffle Compartment Pressure Drop</Text>
       <LabeledText {...makeProps('pressureDropInEntranceAndExit')} />
+
+      <Text category="h6">Total Shell-Side Pressure Drop</Text>
       <LabeledText {...makeProps('shellSidePressureDropTotal')} />
 
+      <Text category="h5">Flow-Induced Vibration Check</Text>
       <LabeledText {...makeProps('tubeUnsupportedLength')} />
       <LabeledText {...makeProps('metalMassPerUnitLength')} />
       <LabeledText {...makeProps('longitudinalStress')} />

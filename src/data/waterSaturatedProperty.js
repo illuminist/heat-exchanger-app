@@ -64,6 +64,7 @@ const parsedData = parseData(raw, fieldName).map(row => {
     dynamicViscosity: row.dynamicViscosity * 1e-6,
     specificHeat: row.specificHeat * 1e3,
     thermalConductivity: row.thermalConductivity * 1e-3,
+    pressure: row.pressure * 1e6,
   })
   return newRow
 })

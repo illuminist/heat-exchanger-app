@@ -169,7 +169,8 @@ export const overallHeatTransferCoeff = (param
 ) => {
     const dobydi = param.tubeOuterDiameter / param.tubeInnerDiameter;
     // console.log(param)
-    // console.log(
+    // console.log(dobydi)
+    // console.log('UfUc',
     //   "1 /",
     //   param.shellSideHeatTransferCoeff, // 1 / hi
     //   "dobydi",
@@ -183,10 +184,16 @@ export const overallHeatTransferCoeff = (param
     //   "Math.log(dobydi)",
     //   param.tubeMaterialK
     // );
+    // console.log((1 /
+    //     (1 / param.shellSideHeatTransferCoeff + // 1 / hi
+    //         dobydi * (1 / param.tubeSideHeatTransferCoeff) + // do/di * 1/hi
+    //         // dobydi * (param.tubeSideFoulingResistance || 0) +
+    //         (param.shellSideFoulingResistance || 0) +
+    //         (param.tubeOuterDiameter / 2) * (Math.log(dobydi) / param.tubeMaterialK))))
     return (1 /
         (1 / param.shellSideHeatTransferCoeff + // 1 / hi
             dobydi * (1 / param.tubeSideHeatTransferCoeff) + // do/di * 1/hi
-            dobydi * (param.tubeSideFoulingResistance || 0) +
+            // dobydi * (param.tubeSideFoulingResistance || 0) +
             (param.shellSideFoulingResistance || 0) +
             (param.tubeOuterDiameter / 2) * (Math.log(dobydi) / param.tubeMaterialK)));
     // return (
@@ -267,8 +274,9 @@ export const fluidPropertyLookUp = (temperature) => {
  * @param {number} param.pitchLength
  */
 export const tubeOuterDistance = (param) => {
-    if ("pitchRatio" in param)
-        return (eva("pitchRatio", param) - 1) * param.tubeOuterDiameter;
+    // if ("pitchRatio" in param)
+    //     return (eva("pitchRatio", param) - 1) * param.tubeOuterDiameter;
+    // console.log(param.pitchLength , param.tubeOuterDiameter);
     return param.pitchLength - param.tubeOuterDiameter;
 };
 /**
@@ -277,17 +285,13 @@ export const tubeOuterDistance = (param) => {
  * @param {number} param.baffleSpacing
  */
 export const bundleCrossflowArea = (param) => {
-    // console.log(
-    //   eva("shellDiameter", param),
-    //   (0.303 * tubeOuterDistance(param) * param.baffleSpacing) / param.pitchLength
-    // );
     return ((eva("shellDiameter", param) *
         tubeOuterDistance(param) *
         param.baffleSpacing) /
         param.pitchLength);
 };
 /**
- * @function G_t u_m tubeSideMassVelocity
+ * @function G_t u_m V_t tubeSideMassVelocity
  * @param {number} param.tubeSideMassFlowRate
  */
 export const tubeSideMassVelocity = (param) => {
@@ -350,6 +354,9 @@ export const shellSideHeatTransferCoeff = (param) => {
  * @function A_tp total tube inner area, Area of TS HT
  */
 export const tubeInnerArea = (param) => {
+    // console.log('A_tp',((((Math.PI * Math.pow(param.tubeInnerDiameter, 2)) / 4) *
+    // eva("numberOfTubes", param)) /
+    // 2))
     return ((((Math.PI * Math.pow(param.tubeInnerDiameter, 2)) / 4) *
         eva("numberOfTubes", param)) /
         2);
@@ -683,11 +690,17 @@ export const tubeSidePressureDrop = (param) => {
             2));
 };
 /**
+ * @function A_f,A_c shell side heat transfer area using overallHeatTransferCoeff from param
+ */
+export const shellSideHeatTransferAreaParam = (param) => {
+    return (shellHeatDuty(param) /
+        (param.overallHeatTransferCoeff * effectiveTemperatureDifference(param)));
+};
+/**
  * @function A_c shell side heat transfer area clean
  */
 export const shellSideHeatTransferAreaClean = (param) => {
     param = Object.assign(Object.assign({}, param), { shellSideFoulingResistance: 0, tubeSideFoulingResistance: 0 });
-    // console.log("Uc", overallHeatTransferCoeff(param));
     return (shellHeatDuty(param) /
         (overallHeatTransferCoeff(param) * effectiveTemperatureDifference(param)));
 };
@@ -740,11 +753,11 @@ export const surfaceOverDesign = (param) => {
  * @function OD recalculation
  */
 export const surfaceOverDesignRecalculate = (param) => {
-    const od = param.surfaceOverDesign || 1.2;
-    const uc = overallHeatTransferCoeff(_.omit(param, "tubeSideFoulingResistance", "shellSideFoulingResistance"));
+    const od = 1.2;
+    const uc = param.overallHeatTransferCoeffClean
     const uf = uc / od;
     const rft = 1 / uf - 1 / uc;
-    const ac = shellSideHeatTransferAreaClean(param);
+    const ac = shellSideHeatTransferAreaParam({ ...param, overallHeatTransferCoeff: uc });
     const af = od * ac;
     const l = tubeLength(Object.assign(Object.assign({}, param), { shellSideHeatTransferAreaFoul: af }));
     const ds = shellDiameter(Object.assign(Object.assign({}, param), { tubeLength: l, requireSurface: af }));
@@ -770,11 +783,11 @@ export const tubeUnsupportedLength = (param) => {
  * @function I moment of inertia
  */
 export const momentOfInertia = (param) => {
-    console.log(param.tubeOuterDiameter, param.tubeInnerDiameter)
-    console.log('I', (
+    // console.log(param.tubeOuterDiameter, param.tubeInnerDiameter)
+    // console.log('I', (
         
-    (Math.pow(param.tubeOuterDiameter, 1) -
-        Math.pow(param.tubeInnerDiameter, 1))))
+    // (Math.pow(param.tubeOuterDiameter, 1) -
+    //     Math.pow(param.tubeInnerDiameter, 1))))
     return ((Math.PI / 64) *
         (Math.pow(param.tubeOuterDiameter, 4) -
             Math.pow(param.tubeInnerDiameter, 4)));
@@ -799,20 +812,21 @@ export const tubeMetalCrossSectionalArea = (param) => {
  */
 export const naturalFrequency = (param) => {
     const C = edgeGeometryConstant(param);
-    console.log(
-      10.838,
-      axialTubeStressMultiplier(param),
-      C,
-      tubeUnsupportedLength(param),
-      2,
-      param.tubeYoungModulus,
-      momentOfInertia(param),
-      effectiveTubeMass(param),
-      1 / 2
-    );
-    console.log(
-    Math.pow((param.tubeYoungModulus * momentOfInertia(param)) /
-        effectiveTubeMass(param), 1 / 2))
+    // console.log(
+    //     'nt',
+    //   10.838,
+    //   axialTubeStressMultiplier(param),
+    //   C,
+    //   tubeUnsupportedLength(param),
+    //   2,
+    //   param.tubeYoungModulus,
+    //   momentOfInertia(param),
+    //   effectiveTubeMass(param),
+    //   1 / 2
+    // );
+    // console.log(
+    // Math.pow((param.tubeYoungModulus * momentOfInertia(param)) /
+    //     effectiveTubeMass(param), 1 / 2))
     return (((10.838 * (axialTubeStressMultiplier(param) * C)) /
         Math.pow(tubeUnsupportedLength(param), 2)) *
         Math.pow((param.tubeYoungModulus * momentOfInertia(param)) /
@@ -835,7 +849,7 @@ export const axialTubeStressMultiplier = (param) => {
     const St = longitudinalStress(param);
     const At = tubeMetalCrossSectionalArea(param);
     const Fcr = clipplingLoad(param);
-    console.log(St,At,Fcr)
+    // console.log(St,At,Fcr)
     return Math.pow(1 + (St * At) / Fcr, 1 / 2);
 };
 /**
@@ -868,7 +882,7 @@ export const tubeFluidMassDisplacedPerUnitLength = (param) => {
  */
 export const hydroDynamicMassPerUnitLength = (param) => {
     const mfo = tubeFluidMassDisplacedPerUnitLength(param);
-    console.log('hm',mfo,param.addedMassCoefficient)
+    // console.log('hm',mfo,param.addedMassCoefficient)
     return param.addedMassCoefficient * mfo;
 };
 /**
@@ -878,7 +892,7 @@ export const effectiveTubeMass = (param) => {
     const mt = tubeSizeData(param).massPerLengthSteel;
     const mfi = tubeFluidMassPerUnitLength(param);
     const Hm = hydroDynamicMassPerUnitLength(param);
-    console.log('mo', mt,mfi,Hm)
+    // console.log('mo', mt,mfi,Hm)
     return mt + mfi + Hm;
 };
 /**

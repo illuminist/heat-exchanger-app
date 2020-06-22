@@ -8,7 +8,7 @@ export class ErrorBoundary extends React.PureComponent {
     this.state = { hasError: false, error: null }
   }
 
-  static getDerivedStateFromError() {
+  static getDerivedStateFromError(e) {
     return { hasError: true, error: e }
   }
 

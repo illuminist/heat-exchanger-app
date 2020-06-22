@@ -39,7 +39,6 @@ export const RatingLanding = ({
   initialValues = defaultInput,
 }) => {
   let time = 0
-  console.log(route)
   if (
     route &&
     route.params &&
